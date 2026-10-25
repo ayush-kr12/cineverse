@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/omdb.js": {
+      "maxDuration": 10
+    }
+  }
+}

@@ -4,7 +4,6 @@ import "./style.css";
 
 const sections = ["All-Time Movies", "Movies Since 2000", "TV Series"];
 const categories = ["Greatest", "Popular & Highly Rated", "Underrated Gems"];
-const apiKey = import.meta.env.VITE_OMDB_API_KEY;
 
 function formatRuntime(value) {
   if (!value || value === "N/A") return null;
@@ -69,7 +68,6 @@ export default function App() {
 
   // Fetch metadata for a small visible batch. Successful results are saved in localStorage.
   useEffect(() => {
-    if (!apiKey) return;
     let cancelled = false;
     async function loadVisiblePosters() {
       // Load only a small batch at a time to avoid exhausting the OMDb quota.
@@ -78,8 +76,8 @@ export default function App() {
         if (metadata[item.id]) continue;
         try {
           const type = item.section === "TV Series" ? "series" : "movie";
-          const params = new URLSearchParams({ apikey: apiKey, t: item.title, type, plot: "short" });
-          const response = await fetch(`https://www.omdbapi.com/?${params.toString()}`);
+          const params = new URLSearchParams({ t: item.title, type, plot: "short" });
+          const response = await fetch(`/api/omdb?${params.toString()}`);
           const data = await response.json();
           if (cancelled) return;
           setMetadata(previous => ({
@@ -95,7 +93,7 @@ export default function App() {
     }
     loadVisiblePosters();
     return () => { cancelled = true; };
-  }, [filtered, apiKey]);
+  }, [filtered, metadata]);
 
   useEffect(() => {
     if (!selected) return;
@@ -109,15 +107,10 @@ export default function App() {
       }
       setLoadingDetails(true);
       setDetailError("");
-      if (!apiKey) {
-        setDetailError("OMDb key not found. Check that .env is in the main project folder and contains VITE_OMDB_API_KEY=your_key, then restart the dev server.");
-        setLoadingDetails(false);
-        return;
-      }
       try {
         const type = selected.section === "TV Series" ? "series" : "movie";
-        const params = new URLSearchParams({ apikey: apiKey, t: selected.title, type, plot: "full" });
-        const response = await fetch(`https://www.omdbapi.com/?${params.toString()}`);
+        const params = new URLSearchParams({ t: selected.title, type, plot: "full" });
+        const response = await fetch(`/api/omdb?${params.toString()}`);
         const data = await response.json();
         if (!response.ok || data.Response === "False") {
           const message = data.Error || "OMDb could not find this title.";
@@ -133,7 +126,7 @@ export default function App() {
     }
     loadDetails();
     return () => { cancelled = true; };
-  }, [selected, apiKey, metadata]);
+  }, [selected, metadata]);
 
   const toggleWatchlist = item => {
     const next = watchlist.includes(item.id) ? watchlist.filter(id => id !== item.id) : [...watchlist, item.id];
